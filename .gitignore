@@ -1,0 +1,13 @@
+# OS files
+.DS_Store
+*.swp
+
+# Project specific
+*.dll
+*.so
+.vscode/
+*.log
+
+# C++
+*.d
+*.o
