@@ -4,12 +4,6 @@ TARGET			= vtnvme
 CXXFLAGS		= -std=c++14 -O2 -MD -Wall -Wextra -g -fPIC
 DEFINES         = -D__KERNEL__ 
 
-ifeq ($(OS), WINDOWS_NT)
-	DEFINES += -DWIN32
-else
-	DEFINES += -D__LINUX__
-endif
-
 # Compiler
 CXX				= g++
 
@@ -37,12 +31,24 @@ SOURCES			+= \
 	src/storkit/storage/StorageKitScsiDevice.cpp \
 	src/storkit/storage/StorageKitStorageDevice.cpp \
 	src/storkit/storage/StorageKitNvmeDevice.cpp \
+	src/storkit/protocol/StorageKitScsiProtocolCommon.cpp \
+	src/storkit/protocol/StorageKitNvmeProtocolCommon.cpp \
+
+ifeq ($(OS), Windows_NT)
+	DEFINES += -DWIN32
+	SOURCES			+= \
+	src/storkit/protocol/windows/StorageKitAtaProtocol.cpp \
+	src/storkit/protocol/windows/StorageKitScsiProtocol.cpp \
+	src/storkit/protocol/windows/StorageKitStorageProtocol.cpp \
+	src/storkit/protocol/windows/StorageKitNvmeProtocol.cpp
+else
+	DEFINES += -D__LINUX__
+	SOURCES			+= \
 	src/storkit/protocol/linux/StorageKitAtaProtocol.cpp \
 	src/storkit/protocol/linux/StorageKitScsiProtocol.cpp \
 	src/storkit/protocol/linux/StorageKitStorageProtocol.cpp \
-	src/storkit/protocol/linux/StorageKitNvmeProtocol.cpp \
-	src/storkit/protocol/StorageKitScsiProtocolCommon.cpp \
-	src/storkit/protocol/StorageKitNvmeProtocolCommon.cpp \
+	src/storkit/protocol/linux/StorageKitNvmeProtocol.cpp
+endif
 
 OBJECTS			= $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SOURCES))
 
@@ -50,6 +56,7 @@ OBJECTS			= $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SOURCES))
 all: dirs $(BUILD_DIR)/$(TARGET)
 
 dirs:
+	@echo $(OS)
 	@echo "Create directories"
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(dir $(OBJECTS))
