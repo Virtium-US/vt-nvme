@@ -10,11 +10,13 @@ CXX				= g++
 # Define directories
 BUILD_DIR		= ./build
 
-CFLAGS			= -I. -Isrc/storkit/include
+CFLAGS			= -I. -Isrc/ -Isrc/storkit/include
 
 # Files
 SOURCES			+= \
 	src/vt-nvme.cpp \
+	src/commands.cpp \
+	src/maverick.cpp \
 	src/storkit/include/StorageKitAlignedBuffer.cpp \
 	src/storkit/include/StorageKitBufferParser.cpp \
 	src/storkit/include/StorageKitParser.cpp \
@@ -56,13 +58,12 @@ OBJECTS			= $(patsubst %.cpp, $(BUILD_DIR)/%.o, $(SOURCES))
 all: dirs $(BUILD_DIR)/$(TARGET)
 
 dirs:
-	@echo $(OS)
 	@echo "Create directories"
 	@mkdir -p $(BUILD_DIR)
 	@mkdir -p $(dir $(OBJECTS))
 
 $(BUILD_DIR)/%.o: %.cpp
-	@echo "Compiling $< --> $@"
+	@echo "Compiling for $(OS): $< --> $@"
 	$(CXX) -c -o $@ $< $(CXXFLAGS) $(CFLAGS) $(DEFINES)
 
 $(BUILD_DIR)/$(TARGET): $(OBJECTS)
