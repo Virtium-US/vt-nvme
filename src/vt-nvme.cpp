@@ -19,7 +19,7 @@ int main(int argc, char** argv)
     }
     else if (ret != 0)
     {
-        std::cout << "Error code: " << ret << std::endl; 
+        std::cout << "\nSomething went wrong - Error code: " << ret << std::endl; 
     }
 
     return ret;

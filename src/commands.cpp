@@ -7,9 +7,15 @@ int displayHelp(int argc, char** argv)
     std::cout << "\nSupported commands:" << std::endl;
     for (auto cmdEntry = supportedCommands.begin(); cmdEntry != supportedCommands.end(); cmdEntry++)
     {
-        std::cout << "  " << cmdEntry->name << ": " << cmdEntry->help << std::endl;
+        std::cout << "  " << cmdEntry->name << ": " << cmdEntry->usage << " - " << cmdEntry->help << std::endl;
     }
 
+    return 0;
+}
+
+int list(int argc, char** argv)
+{
+    std::cout << "NVMe devices found:" << std::endl;
     return 0;
 }
 
@@ -17,13 +23,22 @@ int init(int argc, char** argv)
 {
     ADD_CMD(
         "help",
-        "Displays this menu", 
+        "Displays this menu",
+        "vtnvme help",
         displayHelp
     );
 
     ADD_CMD(
+        "list",
+        "Prints list of connected NVMe devices",
+        "vtnvme list",
+        list
+    );
+
+    ADD_CMD(
         "set-op", 
-        "Set over-previsioning percentage (ex: vtnvme set-op 75)", 
+        "Sets over-provisioning percentage (ex: vtnvme set-op /dev/nvme0n1 40)", 
+        "vtnvme set-op DEVICE OP%",
         setOP
     );
 
