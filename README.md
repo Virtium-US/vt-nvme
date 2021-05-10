@@ -8,7 +8,7 @@ To use the tool, clone the repository and build using the following commands:
 ```
 $ git clone https://github.com/Virtium-US/vt-nvme.git && cd vt-nvme
 $ make
-$ ./build/vtnvme help
+$ ./build/vtnvme.exe help
 
 Usage: vtnvme COMMAND [ARGS]
 
@@ -17,6 +17,16 @@ Supported commands:
   list: vtnvme list - Prints list of connected NVMe devices
   get-op: vtnvme get-op DEVICE - Returns current over-provisioning information (ex: vtnvme get-op /dev/nvme0n1)
   set-op: vtnvme set-op DEVICE OP% - Sets over-provisioning percentage (ex: vtnvme set-op /dev/nvme0n1 40)
+```
+
+For example, to see the over-provisioning percentage for a specific drive, you can run the following commands: 
+```
+$ ./build/vtnvme.exe list
+NVMe devices found:
+- \\.\PhysicalDrive1 00000000 VSFCN8CI1920G-ENG
+$ ./build/vtnvme.exe get-op \\\\.\\PhysicalDrive1
+Current OP:      0
+OP on next boot: 0
 ```
 ***NOTE: commands like `get/set-op` are vendor specific!***
 

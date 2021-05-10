@@ -16,6 +16,10 @@ int setOP(int argc, char** argv)
 
     char* devPath = argv[2];
     SKBaseDeviceInfo* dev = SKStorageProtocol::scan(devPath);
+    if (dev == nullptr)
+    {
+        return COMMAND_FAILED;
+    }
     SKNvmeProtocol* nvmeInterface = new SKNvmeProtocol(dev->devicePath, dev->deviceHandle);
 
     SKAlignedBuffer* buffer = new SKAlignedBuffer(BUFFER_SIZE);
@@ -70,6 +74,10 @@ int getOP(int argc, char** argv)
     char* devPath = argv[2];
 
     SKBaseDeviceInfo* dev = SKStorageProtocol::scan(devPath);
+    if (dev == nullptr)
+    {
+        return COMMAND_FAILED;
+    }
     SKNvmeProtocol* nvmeInterface = new SKNvmeProtocol(dev->devicePath, dev->deviceHandle);
 
     // setup command
