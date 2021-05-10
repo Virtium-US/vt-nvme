@@ -113,7 +113,7 @@ SKReturnCode SKAtaProtocol::issueCommand(const SKAtaCommandDesc *cmdDesc, SKAlig
         ataCmd.PreviousTaskFile[RESERVED_REGISTER] = cmdDesc->inputFieldsExt.Reserved;
     }
 
-    unsigned long returnBytes;
+    LPDWORD returnBytes;
     bool success = DeviceIoControl(
                 this->handle,
                 IOCTL_ATA_PASS_THROUGH_DIRECT,
@@ -121,7 +121,7 @@ SKReturnCode SKAtaProtocol::issueCommand(const SKAtaCommandDesc *cmdDesc, SKAlig
                 ataCmd.Length,
                 &ataCmd,
                 ataCmd.Length,
-                &returnBytes,
+                returnBytes,
                 nullptr);
 
     this->lastError = ataCmd.CurrentTaskFile[ERROR_REGISTER];

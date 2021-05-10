@@ -41,7 +41,7 @@ SKReturnCode SKScsiProtocol::issueAtaCommand(const DeviceHandle &handle, const S
     else
         scsiCmd.sptd.DataIn = SCSI_IOCTL_DATA_UNSPECIFIED;
 
-    unsigned long returnBytes;
+    LPDWORD returnBytes;
     bool success = DeviceIoControl(
                 handle,
                 IOCTL_SCSI_PASS_THROUGH_DIRECT,
@@ -49,7 +49,7 @@ SKReturnCode SKScsiProtocol::issueAtaCommand(const DeviceHandle &handle, const S
                 sizeof(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER),
                 &scsiCmd,
                 sizeof(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER),
-                &returnBytes,
+                returnBytes,
                 NULL);
 
     // update outputTaskFileRegister
@@ -94,7 +94,7 @@ SKReturnCode SKScsiProtocol::issueScsiCommand(const DeviceHandle &handle, const 
     else
         scsiCmd.sptd.DataIn = SCSI_IOCTL_DATA_UNSPECIFIED;
 
-    unsigned long returnBytes;
+    LPDWORD returnBytes;
     bool success = DeviceIoControl(
                 handle,
                 IOCTL_SCSI_PASS_THROUGH_DIRECT,
@@ -102,7 +102,7 @@ SKReturnCode SKScsiProtocol::issueScsiCommand(const DeviceHandle &handle, const 
                 sizeof(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER),
                 &scsiCmd,
                 sizeof(SCSI_PASS_THROUGH_DIRECT_WITH_BUFFER),
-                &returnBytes,
+                returnBytes,
                 NULL);
 
     lastError = scsiCmd.sptd.ScsiStatus;
