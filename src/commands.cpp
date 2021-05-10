@@ -15,7 +15,35 @@ int displayHelp(int argc, char** argv)
 
 int list(int argc, char** argv)
 {
-    std::cout << "NVMe devices found:" << std::endl;
+    std::vector<SKStorageDevice*> storageDevices;
+    SKStorageDeviceUtils::scanDevices(storageDevices);
+
+    if (storageDevices.size() == 0) 
+    {
+        std::cout << "No NVMe devices found. (Do you have admin rights?)" << std::endl;
+        return COMMAND_FAILED;
+    }
+
+    std::cout << "NVMe devices found: " << std::endl;
+    SKAlignedBuffer* identifyInfo = new SKAlignedBuffer(4096);
+    for (const auto& device : storageDevices) 
+    {
+        if (device->getDeviceType() == SKDeviceType::NVME) 
+        {
+            dynamic_cast<SKNvmeDevice*>(device)->identifyController(identifyInfo);
+            char serialNumber[20];
+            char modelNumber[40];
+            strncpy(serialNumber, (char*) identifyInfo->ToDataBuffer() + 4, 20);
+            strncpy(modelNumber, (char*) identifyInfo->ToDataBuffer() + 24, 40);
+            printf("- %s %s %s\n", device->getDevicePath().c_str(), serialNumber, modelNumber);
+        }
+
+        delete device;
+    }
+
+    storageDevices.clear();
+    delete identifyInfo;
+
     return 0;
 }
 
@@ -33,6 +61,13 @@ int init(int argc, char** argv)
         "Prints list of connected NVMe devices",
         "vtnvme list",
         list
+    );
+
+    ADD_CMD(
+        "get-op", 
+        "Returns current over-provisioning information (ex: vtnvme get-op /dev/nvme0n1)", 
+        "vtnvme get-op DEVICE",
+        getOP
     );
 
     ADD_CMD(

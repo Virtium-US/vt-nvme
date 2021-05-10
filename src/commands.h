@@ -5,12 +5,15 @@
 #include <cstring>
 #include <vector>
 #include <iostream>
+#include <StorageKitTypes.h>
+#include <StorageKitStorageDeviceUtils.h>
 
 #include "maverick.h"
 
 #define COMMAND_NOT_DEFINED -1
 #define TOO_FEW_ARGUMENTS 1
 #define INVALID_ARGUMENTS 2
+#define COMMAND_FAILED 3
 
 typedef struct {
     std::string name;

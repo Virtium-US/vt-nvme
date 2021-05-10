@@ -2,8 +2,15 @@
 #define __MAVERICK_H__
 
 #include <iostream>
+#include <StorageKitTypes.h>
+#include <StorageKitStorageDeviceUtils.h>
+#include <StorageKitNvmeDevice.h>
+#include <StorageKitNvmeProtocol.h>
+#include <StorageKitNvmeCommandDesc.h>
 
 #include "commands.h"
+
+#define BUFFER_SIZE 4096
 
 /**
  * Set the over provisioning for the drive. The valid range is 0% thru 50%.
