@@ -1,6 +1,7 @@
 #include <wtypesbase.h>
 #include <winioctl.h>
 #include <ntddscsi.h>
+#include "win_nvme.h" // customized version of 
 #include "StorageKitNvmeProtocol.h"
 
 using namespace std;
@@ -15,6 +16,7 @@ using namespace std;
 
 #define IOCTL_STORAGE_FIRMWARE_DOWNLOAD         CTL_CODE(IOCTL_STORAGE_BASE, 0x0701, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 #define IOCTL_STORAGE_FIRMWARE_ACTIVATE         CTL_CODE(IOCTL_STORAGE_BASE, 0x0702, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
+#define IOCTL_STORAGE_PROTOCOL_COMMAND          CTL_CODE(IOCTL_STORAGE_BASE, 0x04F0, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS)
 
 const STORAGE_PROPERTY_ID StorageAdapterProtocolSpecificProperty = static_cast<STORAGE_PROPERTY_ID>(ADAPTER_PROTOCOL_ID);
 const STORAGE_PROPERTY_ID StorageDeviceProtocolSpecificProperty = static_cast<STORAGE_PROPERTY_ID>(DEVICE_PROTOCOL_ID);
@@ -38,13 +40,6 @@ typedef enum _STORAGE_PROTOCOL_NVME_DATA_TYPE
     NVMeDataTypeLogPage,
     NVMeDataTypeFeature,
 } STORAGE_PROTOCOL_NVME_DATA_TYPE, *PSTORAGE_PROTOCOL_NVME_DATA_TYPE;
-
-typedef enum
-{
-    NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE = 0,
-    NVME_IDENTIFY_CNS_CONTROLLER = 1,
-    NVME_IDENTIFY_CNS_ACTIVE_NAMESPACES = 2
-} NVME_IDENTIFY_CNS_CODES;
 
 typedef struct _STORAGE_PROTOCOL_SPECIFIC_DATA
 {
@@ -84,6 +79,38 @@ typedef struct _STORAGE_HW_FIRMWARE_ACTIVATE {
     U8 Slot;
     U8 Reserved0[3];
 } STORAGE_HW_FIRMWARE_ACTIVATE, *PSTORAGE_HW_FIRMWARE_ACTIVATE;
+
+typedef struct _STORAGE_PROTOCOL_COMMAND {
+
+    ULONG   Version;                        // STORAGE_PROTOCOL_STRUCTURE_VERSION
+    ULONG   Length;                         // sizeof(STORAGE_PROTOCOL_COMMAND)
+
+    STORAGE_PROTOCOL_TYPE  ProtocolType;
+    ULONG   Flags;                          // Flags for the request
+
+    ULONG   ReturnStatus;                   // return value
+    ULONG   ErrorCode;                      // return value, optional
+
+    ULONG   CommandLength;                  // non-zero value should be set by caller
+    ULONG   ErrorInfoLength;                // optional, can be zero
+    ULONG   DataToDeviceTransferLength;     // optional, can be zero. Used by WRITE type of request.
+    ULONG   DataFromDeviceTransferLength;   // optional, can be zero. Used by READ type of request.
+
+    ULONG   TimeOutValue;                   // in unit of seconds
+
+    ULONG   ErrorInfoOffset;                // offsets need to be pointer aligned
+    ULONG   DataToDeviceBufferOffset;       // offsets need to be pointer aligned
+    ULONG   DataFromDeviceBufferOffset;     // offsets need to be pointer aligned
+
+    ULONG   CommandSpecific;                // optional information passed along with Command.
+    ULONG   Reserved0;
+
+    ULONG   FixedProtocolReturnData;        // return data, optional. Some protocol, such as NVMe, may return a small amount data (DWORD0 from completion queue entry) without the need of separate device data transfer.
+    ULONG   Reserved1[3];
+
+    _Field_size_bytes_full_(CommandLength) UCHAR Command[ANYSIZE_ARRAY];
+
+} STORAGE_PROTOCOL_COMMAND, *PSTORAGE_PROTOCOL_COMMAND;
 
 U16 getWord(U8* buffer, U32 index)
 {
@@ -319,6 +346,32 @@ SKReturnCode SKNvmeProtocol::issueNvmeCommand(const DeviceHandle &handle, const 
         }
         else
         {
+            int cmdBufferLen = sizeof(PSTORAGE_PROTOCOL_COMMAND) + buffer->GetSizeInByte();
+            SKAlignedBuffer* cmdBuffer = new SKAlignedBuffer(cmdBufferLen);
+            memset(cmdBuffer->ToDataBuffer(), 0, cmdBufferLen);
+
+            // https://docs.microsoft.com/en-us/windows-hardware/drivers/ddi/ntddstor/ns-ntddstor-_storage_protocol_command?redirectedfrom=MSDN
+            PSTORAGE_PROTOCOL_COMMAND protocolCommand = (PSTORAGE_PROTOCOL_COMMAND) cmdBuffer->ToDataBuffer();
+
+            protocolCommand->Version = 0x1;  
+            protocolCommand->Length = sizeof(STORAGE_PROTOCOL_COMMAND);  
+            protocolCommand->ProtocolType = ProtocolTypeNvme;  
+            protocolCommand->Flags = 0x80000000;  
+            protocolCommand->CommandLength = 0x40;
+            protocolCommand->ErrorInfoLength = sizeof(NVME_ERROR_INFO_LOG);  
+            protocolCommand->DataFromDeviceTransferLength = cmdBufferLen;  
+            protocolCommand->TimeOutValue = 10;  
+            protocolCommand->ErrorInfoOffset = FIELD_OFFSET(STORAGE_PROTOCOL_COMMAND, Command) + 0x40;  
+            protocolCommand->DataFromDeviceBufferOffset = protocolCommand->ErrorInfoOffset + protocolCommand->ErrorInfoLength;  
+            protocolCommand->CommandSpecific = 0x01;
+
+            PWIN_NVME_COMMAND command = (PWIN_NVME_COMMAND) protocolCommand->Command;
+
+            command->CDW0.OPC = cmdDesc->inputFields.OpCode;
+            command->u.GENERAL.CDW10 = cmdDesc->inputFields.AdminCommand.Cdw10;
+            command->u.GENERAL.CDW12 = cmdDesc->inputFields.AdminCommand.Cdw12;
+
+
             return SKErrorInvalidCommand;
         }
 
